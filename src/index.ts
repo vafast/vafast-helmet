@@ -1,4 +1,5 @@
-import { Elysia } from "@huyooo/elysia";
+import { Server, json } from "tirne";
+import type { Route, Middleware } from "tirne";
 
 /**
  * Configuration interface for Report-To header
@@ -241,10 +242,10 @@ function buildReportToString(reports: ReportToConfig[]): string {
 }
 
 /**
- * Creates an Elysia middleware that adds security headers to all responses
+ * Creates a Tirne middleware that adds security headers to all responses
  * Optimized for performance with minimal object spread operations
  */
-export function elysiaHelmet(config: Partial<SecurityConfig> = {}): Elysia {
+export function tirneHelmet(config: Partial<SecurityConfig> = {}): Middleware {
   // Validate configuration only once during initialization
   validateConfig(config);
 
@@ -305,30 +306,52 @@ export function elysiaHelmet(config: Partial<SecurityConfig> = {}): Elysia {
         }${finalConfig.hsts.preload ? "; preload" : ""}`
       : null;
 
-  return new Elysia().derive({ as: "global" }, ({ set }) => {
-    set.headers = { ...staticHeaders };
+  return async (req: Request, next: () => Promise<Response>) => {
+    const response = await next();
 
+    // Create new headers object with security headers
+    const newHeaders = new Headers(response.headers);
+
+    // Add static headers
+    for (const [key, value] of Object.entries(staticHeaders)) {
+      newHeaders.set(key, value);
+    }
+
+    // Add CSP headers
     if (finalConfig.csp) {
       const nonce = finalConfig.csp.useNonce ? generateNonce() : undefined;
       const headerName = finalConfig.csp.reportOnly
         ? "Content-Security-Policy-Report-Only"
         : "Content-Security-Policy";
 
-      set.headers[headerName] = buildCSPString(finalConfig.csp, nonce);
+      newHeaders.set(headerName, buildCSPString(finalConfig.csp, nonce));
 
       if (nonce) {
-        set.headers["X-Nonce"] = nonce;
+        newHeaders.set("X-Nonce", nonce);
       }
     }
 
+    // Add Permissions-Policy header
     if (finalConfig.permissionsPolicy) {
-      set.headers["Permissions-Policy"] = buildPermissionsPolicyString(
-        finalConfig.permissionsPolicy
+      newHeaders.set(
+        "Permissions-Policy",
+        buildPermissionsPolicyString(finalConfig.permissionsPolicy)
       );
     }
 
+    // Add HSTS header
     if (hstsHeader) {
-      set.headers["Strict-Transport-Security"] = hstsHeader;
+      newHeaders.set("Strict-Transport-Security", hstsHeader);
     }
-  });
+
+    // Return new response with updated headers
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
+  };
 }
+
+// 为了向后兼容，保留 elysiaHelmet 作为 tirneHelmet 的别名
+export const elysiaHelmet = tirneHelmet;

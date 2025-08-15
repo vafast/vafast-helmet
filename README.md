@@ -1,8 +1,8 @@
-# Elysia Helmet
+# Vafast Helmet
 
-A comprehensive security middleware for Elysia.js applications that helps secure your apps by setting various HTTP headers.
+A comprehensive security middleware for Tirne applications that helps secure your apps by setting various HTTP headers.
 
-[![NPM Version](https://img.shields.io/npm/v/@huyooo/elysia-helmet)](https://www.npmjs.com/package/@huyooo/elysia-helmet)
+[![NPM Version](https://img.shields.io/npm/v/@vafast/helmet)](https://www.npmjs.com/package/@vafast/helmet)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
@@ -22,19 +22,32 @@ A comprehensive security middleware for Elysia.js applications that helps secure
 ## Installation
 
 ```bash
-bun add @huyooo/elysia-helmet
+bun add @vafast/helmet
 ```
 
 ## Basic Usage
 
 ```typescript
-import { Elysia } from "@huyooo/elysia";
-import { elysiaHelmet } from "@huyooo/elysia-helmet";
+import { Server, json } from "tirne";
+import type { Route } from "tirne";
+import { tirneHelmet } from "@vafast/helmet";
 
-const app = new Elysia()
-  .use(elysiaHelmet({}))
-  .get("/", () => "Hello, Secure World!")
-  .listen(3000);
+const helmet = tirneHelmet({});
+
+const routes: Route[] = [
+  {
+    method: "GET",
+    path: "/",
+    handler: () => json({ message: "Hello, Secure World!" }),
+    middleware: [helmet],
+  },
+];
+
+const server = new Server(routes);
+
+export default {
+  fetch: (req: Request) => server.fetch(req),
+};
 ```
 
 > **Note**: Production mode is automatically enabled when `NODE_ENV` is set to `'production'`. In production mode, additional security measures are enforced.
@@ -42,39 +55,51 @@ const app = new Elysia()
 ## Advanced Configuration
 
 ```typescript
-import { Elysia } from "@huyooo/elysia";
-import { elysiaHelmet, permission } from "@huyooo/elysia-helmet";
+import { Server, json } from "tirne";
+import type { Route } from "tirne";
+import { tirneHelmet, permission } from "@vafast/helmet";
 
-const app = new Elysia()
-  .use(
-    elysiaHelmet({
-      csp: {
-        defaultSrc: [permission.SELF],
-        scriptSrc: [permission.SELF, permission.UNSAFE_INLINE],
-        styleSrc: [permission.SELF, permission.UNSAFE_INLINE],
-        imgSrc: [permission.SELF, permission.DATA, permission.HTTPS],
-        useNonce: true,
-      },
-      hsts: {
-        maxAge: 31536000,
-        includeSubDomains: true,
-        preload: true,
-      },
-      frameOptions: "DENY",
-      referrerPolicy: "strict-origin-when-cross-origin",
-      permissionsPolicy: {
-        camera: [permission.NONE],
-        microphone: [permission.NONE],
-      },
-    })
-  )
-  .listen(3000);
+const helmet = tirneHelmet({
+  csp: {
+    defaultSrc: [permission.SELF],
+    scriptSrc: [permission.SELF, permission.UNSAFE_INLINE],
+    styleSrc: [permission.SELF, permission.UNSAFE_INLINE],
+    imgSrc: [permission.SELF, permission.DATA, permission.HTTPS],
+    useNonce: true,
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  frameOptions: "DENY",
+  referrerPolicy: "strict-origin-when-cross-origin",
+  permissionsPolicy: {
+    camera: [permission.NONE],
+    microphone: [permission.NONE],
+  },
+});
+
+const routes: Route[] = [
+  {
+    method: "GET",
+    path: "/",
+    handler: () => json({ message: "Hello, Secure World!" }),
+    middleware: [helmet],
+  },
+];
+
+const server = new Server(routes);
+
+export default {
+  fetch: (req: Request) => server.fetch(req),
+};
 ```
 
 ## Types Usage
 
 ```typescript
-import type { CSPConfig, HSTSConfig, ReportToConfig, SecurityConfig } from "@huyooo/elysia-helmet";
+import type { CSPConfig, HSTSConfig, ReportToConfig, SecurityConfig } from "@vafast/helmet";
 ```
 
 ### These types are extremely useful if you want to define configurations in separate files
@@ -221,4 +246,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-[MIT](https://github.com/aashahin/@huyooo/elysia-helmet/blob/main/LICENSE)
+[MIT](https://github.com/vafastjs/vafast-helmet/blob/main/LICENSE)
