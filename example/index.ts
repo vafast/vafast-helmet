@@ -1,9 +1,9 @@
-import { Server, json } from "tirne";
-import type { Route } from "tirne";
-import { tirneHelmet } from "../src/index";
+import { Server, createRouteHandler } from "vafast";
+import type { Route } from "vafast";
+import { vafastHelmet } from "../src/index";
 
 // 创建安全头中间件
-const helmet = tirneHelmet({
+const helmet = vafastHelmet({
   csp: {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", "'unsafe-inline'"],
@@ -20,13 +20,17 @@ const routes: Route[] = [
   {
     method: "GET",
     path: "/",
-    handler: () => json({ message: "Hello World with Security Headers!" }),
+    handler: createRouteHandler(() => {
+      return { message: "Hello World with Security Headers!" }
+    }),
     middleware: [helmet],
   },
   {
     method: "GET",
     path: "/api/data",
-    handler: () => json({ data: "Protected API endpoint" }),
+    handler: createRouteHandler(() => {
+      return { data: "Protected API endpoint" }
+    }),
     middleware: [helmet],
   },
 ];

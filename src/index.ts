@@ -1,5 +1,4 @@
-import { Server, json } from "tirne";
-import type { Route, Middleware } from "tirne";
+import type { Middleware } from "vafast";
 
 /**
  * Configuration interface for Report-To header
@@ -242,10 +241,10 @@ function buildReportToString(reports: ReportToConfig[]): string {
 }
 
 /**
- * Creates a Tirne middleware that adds security headers to all responses
+ * Creates a Vafast middleware that adds security headers to all responses
  * Optimized for performance with minimal object spread operations
  */
-export function tirneHelmet(config: Partial<SecurityConfig> = {}): Middleware {
+export function vafastHelmet(config: Partial<SecurityConfig> = {}): Middleware {
   // Validate configuration only once during initialization
   validateConfig(config);
 
@@ -353,5 +352,5 @@ export function tirneHelmet(config: Partial<SecurityConfig> = {}): Middleware {
   };
 }
 
-// 为了向后兼容，保留 elysiaHelmet 作为 tirneHelmet 的别名
-export const elysiaHelmet = tirneHelmet;
+// 为了向后兼容，保留 elysiaHelmet 作为 vafastHelmet 的别名
+export const elysiaHelmet = vafastHelmet;
