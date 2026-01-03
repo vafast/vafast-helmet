@@ -28,18 +28,22 @@ bun add @vafast/helmet
 ## Basic Usage
 
 ```typescript
-import { Server, json } from "tirne";
-import type { Route } from "tirne";
-import { tirneHelmet } from "@vafast/helmet";
+import { Server, createHandler } from "vafast";
+import type { Route } from "vafast";
+import { helmet } from "@vafast/helmet";
 
-const helmet = tirneHelmet({});
+const helmetMiddleware = helmet({});
 
 const routes: Route[] = [
   {
     method: "GET",
     path: "/",
-    handler: () => json({ message: "Hello, Secure World!" }),
-    middleware: [helmet],
+    handler: createHandler(() => {
+      return new Response(JSON.stringify({ message: "Hello, Secure World!" }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }),
+    middleware: [helmetMiddleware],
   },
 ];
 
@@ -55,11 +59,11 @@ export default {
 ## Advanced Configuration
 
 ```typescript
-import { Server, json } from "tirne";
-import type { Route } from "tirne";
-import { tirneHelmet, permission } from "@vafast/helmet";
+import { Server, createHandler } from "vafast";
+import type { Route } from "vafast";
+import { helmet, permission } from "@vafast/helmet";
 
-const helmet = tirneHelmet({
+const helmetMiddleware = helmet({
   csp: {
     defaultSrc: [permission.SELF],
     scriptSrc: [permission.SELF, permission.UNSAFE_INLINE],
@@ -84,8 +88,12 @@ const routes: Route[] = [
   {
     method: "GET",
     path: "/",
-    handler: () => json({ message: "Hello, Secure World!" }),
-    middleware: [helmet],
+    handler: createHandler(() => {
+      return new Response(JSON.stringify({ message: "Hello, Secure World!" }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }),
+    middleware: [helmetMiddleware],
   },
 ];
 
