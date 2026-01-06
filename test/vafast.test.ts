@@ -1,5 +1,6 @@
-import { Server, createRouteHandler } from 'vafast'
+import { Server, createHandler, json } from 'vafast'
 import { vafastHelmet } from '../src/index'
+import { describe, expect, it } from 'vitest'
 
 describe('Vafast Helmet', () => {
   it('should add security headers to responses', async () => {
@@ -16,8 +17,8 @@ describe('Vafast Helmet', () => {
       {
         method: 'GET',
         path: '/',
-        handler: createRouteHandler(() => {
-          return { message: 'Hello World with Security Headers!' }
+        handler: createHandler(() => {
+          return json({ message: 'Hello World with Security Headers!' })
         }),
         middleware: [helmet],
       },
@@ -45,8 +46,8 @@ describe('Vafast Helmet', () => {
       {
         method: 'GET',
         path: '/',
-        handler: createRouteHandler(() => {
-          return { message: 'Hello World!' }
+        handler: createHandler(() => {
+          return json({ message: 'Hello World!' })
         }),
         middleware: [helmet],
       },
@@ -75,8 +76,8 @@ describe('Vafast Helmet', () => {
       {
         method: 'GET',
         path: '/',
-        handler: createRouteHandler(() => {
-          return { message: 'Hello World!' }
+        handler: createHandler(() => {
+          return json({ message: 'Hello World!' })
         }),
         middleware: [helmet],
       },
