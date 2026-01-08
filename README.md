@@ -22,7 +22,7 @@ A comprehensive security middleware for Tirne applications that helps secure you
 ## Installation
 
 ```bash
-bun add @vafast/helmet
+npm install @vafast/helmet
 ```
 
 ## Basic Usage
