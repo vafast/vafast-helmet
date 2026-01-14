@@ -1,4 +1,4 @@
-import type { Middleware } from "vafast";
+import { defineMiddleware } from "vafast";
 
 /**
  * Configuration interface for Report-To header
@@ -244,7 +244,7 @@ function buildReportToString(reports: ReportToConfig[]): string {
  * Creates a Vafast middleware that adds security headers to all responses
  * Optimized for performance with minimal object spread operations
  */
-export function vafastHelmet(config: Partial<SecurityConfig> = {}): Middleware {
+export function vafastHelmet(config: Partial<SecurityConfig> = {}) {
   // Validate configuration only once during initialization
   validateConfig(config);
 
@@ -305,7 +305,7 @@ export function vafastHelmet(config: Partial<SecurityConfig> = {}): Middleware {
         }${finalConfig.hsts.preload ? "; preload" : ""}`
       : null;
 
-  return async (req: Request, next: () => Promise<Response>) => {
+  return defineMiddleware(async (req, next) => {
     const response = await next();
 
     // Create new headers object with security headers
@@ -349,7 +349,7 @@ export function vafastHelmet(config: Partial<SecurityConfig> = {}): Middleware {
       statusText: response.statusText,
       headers: newHeaders,
     });
-  };
+  });
 }
 
 // 为了向后兼容，保留 elysiaHelmet 作为 vafastHelmet 的别名

@@ -1,4 +1,4 @@
-import { Server, createHandler, json } from 'vafast'
+import { Server, defineRoute, defineRoutes, json } from 'vafast'
 import { vafastHelmet } from '../src/index'
 import { describe, expect, it } from 'vitest'
 
@@ -13,16 +13,16 @@ describe('Vafast Helmet', () => {
       xssProtection: true,
     })
 
-    const app = new Server([
-      {
-        method: 'GET',
-        path: '/',
-        handler: createHandler(() => {
-          return json({ message: 'Hello World with Security Headers!' })
-        }),
-        middleware: [helmet],
-      },
-    ])
+    const app = new Server(
+      defineRoutes([
+        defineRoute({
+          method: 'GET',
+          path: '/',
+          handler: () => json({ message: 'Hello World with Security Headers!' }),
+          middleware: [helmet],
+        })
+      ])
+    )
 
     const res = await app.fetch(new Request('http://localhost/'))
     
@@ -42,16 +42,16 @@ describe('Vafast Helmet', () => {
       },
     })
 
-    const app = new Server([
-      {
-        method: 'GET',
-        path: '/',
-        handler: createHandler(() => {
-          return json({ message: 'Hello World!' })
-        }),
-        middleware: [helmet],
-      },
-    ])
+    const app = new Server(
+      defineRoutes([
+        defineRoute({
+          method: 'GET',
+          path: '/',
+          handler: () => json({ message: 'Hello World!' }),
+          middleware: [helmet],
+        })
+      ])
+    )
 
     const res = await app.fetch(new Request('http://localhost/'))
     
@@ -72,16 +72,16 @@ describe('Vafast Helmet', () => {
       },
     })
 
-    const app = new Server([
-      {
-        method: 'GET',
-        path: '/',
-        handler: createHandler(() => {
-          return json({ message: 'Hello World!' })
-        }),
-        middleware: [helmet],
-      },
-    ])
+    const app = new Server(
+      defineRoutes([
+        defineRoute({
+          method: 'GET',
+          path: '/',
+          handler: () => json({ message: 'Hello World!' }),
+          middleware: [helmet],
+        })
+      ])
+    )
 
     const res = await app.fetch(new Request('http://localhost/'))
     
