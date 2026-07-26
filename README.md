@@ -1,257 +1,112 @@
-# Vafast Helmet
+# @vafast/helmet
 
-A comprehensive security middleware for Tirne applications that helps secure your apps by setting various HTTP headers.
+Vafast 安全响应头中间件：为响应附加 CSP、HSTS、X-Frame-Options、Permissions-Policy 等，不改业务逻辑。
 
-[![NPM Version](https://img.shields.io/npm/v/@vafast/helmet)](https://www.npmjs.com/package/@vafast/helmet)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-## Features
-
-- 🛡️ Content Security Policy (CSP)
-- 🔒 X-Frame-Options protection
-- 🚫 XSS Protection
-- 🌐 DNS Prefetch Control
-- 📜 Referrer Policy
-- 🔑 Permissions Policy
-- 🔐 HTTP Strict Transport Security (HSTS)
-- 🌍 Cross-Origin Resource Policy (CORP)
-- 🚪 Cross-Origin Opener Policy (COOP)
-- 📝 Report-To header configuration
-- ✨ Custom headers support
-
-## Installation
+## 安装
 
 ```bash
 npm install @vafast/helmet
 ```
 
-## Basic Usage
+## 快速开始
 
 ```typescript
-import { Server, createHandler } from "vafast";
-import type { Route } from "vafast";
-import { helmet } from "@vafast/helmet";
+import { Server, defineRoute, defineRoutes, json, serve } from 'vafast'
+import { vafastHelmet } from '@vafast/helmet'
 
-const helmetMiddleware = helmet({});
+const routes = defineRoutes([
+  defineRoute({
+    method: 'GET',
+    path: '/',
+    handler: () => json({ ok: true }),
+  }),
+])
 
-const routes: Route[] = [
-  {
-    method: "GET",
-    path: "/",
-    handler: createHandler(() => {
-      return new Response(JSON.stringify({ message: "Hello, Secure World!" }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }),
-    middleware: [helmetMiddleware],
-  },
-];
-
-const server = new Server(routes);
-
-export default {
-  fetch: (req: Request) => server.fetch(req),
-};
+const server = new Server(routes)
+server.use(vafastHelmet())
+serve({ fetch: server.fetch, port: 3000 })
 ```
 
-> **Note**: Production mode is automatically enabled when `NODE_ENV` is set to `'production'`. In production mode, additional security measures are enforced.
+`elysiaHelmet` 是 `vafastHelmet` 的兼容别名。另会始终设置 `X-Content-Type-Options: nosniff`。
 
-## Advanced Configuration
+**HSTS 仅在 `NODE_ENV === 'production'` 时写入**，避免本地 HTTP 被强制 HTTPS。
+
+## 选项
+
+### `SecurityConfig`
+
+| 选项 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `csp` | `CSPConfig` | 见下表 | Content-Security-Policy |
+| `frameOptions` | `'DENY' \| 'SAMEORIGIN' \| 'ALLOW-FROM'` | `'DENY'` | `X-Frame-Options`（`ALLOW-FROM` 已过时） |
+| `xssProtection` | `boolean` | `true` | 写 `X-XSS-Protection: 1; mode=block` |
+| `dnsPrefetch` | `boolean` | `false` | `X-DNS-Prefetch-Control`：`on` / `off` |
+| `referrerPolicy` | 标准枚举字符串 | `'strict-origin-when-cross-origin'` | `Referrer-Policy` |
+| `permissionsPolicy` | `Record<string, string[]>` | 禁用 camera / microphone / geolocation / interest-cohort（空数组 = 禁用） | `Permissions-Policy` |
+| `hsts` | `HSTSConfig` | `{ maxAge: 15552000, includeSubDomains: true, preload: true }` | **仅生产环境**写 `Strict-Transport-Security` |
+| `corp` | `'same-origin' \| 'same-site' \| 'cross-origin'` | `'same-origin'` | `Cross-Origin-Resource-Policy` |
+| `coop` | `'unsafe-none' \| 'same-origin-allow-popups' \| 'same-origin'` | `'same-origin'` | `Cross-Origin-Opener-Policy` |
+| `reportTo` | `ReportToConfig[]` | — | `Report-To` |
+| `customHeaders` | `Record<string, string>` | — | 额外自定义头 |
+
+### 默认 CSP / `CSPConfig`
+
+| 字段 | 默认 | 白话 |
+|------|------|------|
+| `defaultSrc` | `['self']` | 未单独声明的资源类型的兜底来源 |
+| `scriptSrc` | `['self', 'unsafe-inline']` | 允许的脚本来源 |
+| `styleSrc` | `['self', 'unsafe-inline']` | 允许的样式来源 |
+| `imgSrc` | `['self', 'data:', 'blob:']` | 允许的图片来源 |
+| `fontSrc` | `['self']` | 允许的字体来源 |
+| `connectSrc` | `['self']` | `fetch` / XHR / WebSocket 等 |
+| `frameSrc` | `['self']` | 允许嵌入的 frame 源 |
+| `objectSrc` | `['none']` | `<object>` / `<embed>` |
+| `baseUri` | `['self']` | 限制 `<base href>` |
+| `reportUri` | — | CSP `report-uri` |
+| `useNonce` | — | 为 script/style 注入 nonce，并写 `X-Nonce` |
+| `reportOnly` | — | 使用 `Content-Security-Policy-Report-Only` |
+
+### `HSTSConfig`
+
+| 字段 | 默认 | 说明 |
+|------|------|------|
+| `maxAge` | `15552000` | 秒；`< 0` 初始化抛错 |
+| `includeSubDomains` | `true` | 附加 `; includeSubDomains` |
+| `preload` | `true` | 附加 `; preload` |
+
+### `ReportToConfig`
+
+| 字段 | 说明 |
+|------|------|
+| `group` | 端点组名 |
+| `maxAge` | 缓存秒数（`< 0` 抛错） |
+| `endpoints` | `{ url, priority?, weight? }[]`，至少一个 |
+| `includeSubdomains` | 可选，是否含子域 |
+
+### `permission` 常量
+
+| 常量 | 值 |
+|------|-----|
+| `SELF` | `'self'` |
+| `UNSAFE_INLINE` | `'unsafe-inline'` |
+| `HTTPS` | `https:` |
+| `DATA` | `data:` |
+| `NONE` | `'none'` |
+| `BLOB` | `blob:` |
 
 ```typescript
-import { Server, createHandler } from "vafast";
-import type { Route } from "vafast";
-import { helmet, permission } from "@vafast/helmet";
+import { vafastHelmet, permission } from '@vafast/helmet'
 
-const helmetMiddleware = helmet({
-  csp: {
-    defaultSrc: [permission.SELF],
-    scriptSrc: [permission.SELF, permission.UNSAFE_INLINE],
-    styleSrc: [permission.SELF, permission.UNSAFE_INLINE],
-    imgSrc: [permission.SELF, permission.DATA, permission.HTTPS],
-    useNonce: true,
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true,
-  },
-  frameOptions: "DENY",
-  referrerPolicy: "strict-origin-when-cross-origin",
-  permissionsPolicy: {
-    camera: [permission.NONE],
-    microphone: [permission.NONE],
-  },
-});
-
-const routes: Route[] = [
-  {
-    method: "GET",
-    path: "/",
-    handler: createHandler(() => {
-      return new Response(JSON.stringify({ message: "Hello, Secure World!" }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }),
-    middleware: [helmetMiddleware],
-  },
-];
-
-const server = new Server(routes);
-
-export default {
-  fetch: (req: Request) => server.fetch(req),
-};
+server.use(
+  vafastHelmet({
+    csp: {
+      scriptSrc: [permission.SELF],
+      imgSrc: [permission.SELF, permission.DATA, 'https:'],
+    },
+  }),
+)
 ```
 
-## Types Usage
+## 文档
 
-```typescript
-import type { CSPConfig, HSTSConfig, ReportToConfig, SecurityConfig } from "@vafast/helmet";
-```
-
-### These types are extremely useful if you want to define configurations in separate files
-
-### See `Configuration Options` below to get the type info
-
-## Configuration Options
-
-### Content Security Policy (CSP)
-
-```typescript
-export interface CSPConfig {
-  /** Default source directive */
-  defaultSrc?: string[];
-  /** Script source directive */
-  scriptSrc?: string[];
-  /** Style source directive */
-  styleSrc?: string[];
-  /** Image source directive */
-  imgSrc?: string[];
-  /** Font source directive */
-  fontSrc?: string[];
-  /** Connect source directive */
-  connectSrc?: string[];
-  /** Frame source directive */
-  frameSrc?: string[];
-  /** Object source directive */
-  objectSrc?: string[];
-  /** Base URI directive */
-  baseUri?: string[];
-  /** Report URI directive */
-  reportUri?: string;
-  /** Use nonce for script and style tags */
-  useNonce?: boolean;
-  /** Report-only mode */
-  reportOnly?: boolean;
-}
-```
-
-### HSTS Configuration
-
-```typescript
-export interface HSTSConfig {
-  /** Maximum age */
-  maxAge?: number;
-  /** Include sub-domains */
-  includeSubDomains?: boolean;
-  /** Preload */
-  preload?: boolean;
-}
-```
-
-### Report-To Configuration
-
-```typescript
-export interface ReportToConfig {
-  /** Group name for the endpoint */
-  group: string;
-  /** Maximum age of the endpoint configuration (in seconds) */
-  maxAge: number;
-  /** Endpoints to send reports to */
-  endpoints: Array<{
-    url: string;
-    priority?: number;
-    weight?: number;
-  }>;
-  /** Include subdomains in reporting */
-  includeSubdomains?: boolean;
-}
-```
-
-### Security Configuration
-
-```typescript
-export interface SecurityConfig {
-  /** Content Security Policy configuration */
-  csp?: CSPConfig;
-  /** Enable or disable X-Frame-Options (DENY, SAMEORIGIN, ALLOW-FROM) */
-  frameOptions?: "DENY" | "SAMEORIGIN" | "ALLOW-FROM";
-  /** Enable or disable XSS Protection */
-  xssProtection?: boolean;
-  /** Enable or disable DNS Prefetch Control */
-  dnsPrefetch?: boolean;
-  /** Configure Referrer Policy */
-  referrerPolicy?:
-    | "no-referrer"
-    | "no-referrer-when-downgrade"
-    | "origin"
-    | "origin-when-cross-origin"
-    | "same-origin"
-    | "strict-origin"
-    | "strict-origin-when-cross-origin"
-    | "unsafe-url";
-  /** Configure Permissions Policy */
-  permissionsPolicy?: Record<string, string[]>;
-  /** Configure HSTS (HTTP Strict Transport Security) */
-  hsts?: HSTSConfig;
-  /** Enable or disable Cross-Origin Resource Policy */
-  corp?: "same-origin" | "same-site" | "cross-origin";
-  /** Enable or disable Cross-Origin Opener Policy */
-  coop?: "unsafe-none" | "same-origin-allow-popups" | "same-origin";
-  /** Configure Report-To header */
-  reportTo?: ReportToConfig[];
-  /** Custom headers to add */
-  customHeaders?: Record<string, string>;
-}
-```
-
-### Permission Configuration
-
-```typescript
-export const permission = {
-  /** Source: Self allowed */
-  SELF: "'self'",
-  /** Source: Unsafe Inline allowed */
-  UNSAFE_INLINE: "'unsafe-inline'",
-  /** Source: HTTPS allowed */
-  HTTPS: "https:",
-  /** Source: Data allowed */
-  DATA: "data:",
-  /** Source: None is allowed */
-  NONE: "'none'",
-  /** Source: Blob allowed */
-  BLOB: "blob:",
-} as const;
-```
-
-## Default Configuration
-
-The middleware comes with secure defaults:
-
-- CSP with `'self'` as default source
-- Frame options set to `DENY`
-- XSS Protection enabled
-- DNS Prefetch Control disabled
-- Strict Referrer Policy
-- And more secure defaults
-
-You can override any of these defaults by passing your own configuration.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-[MIT](https://github.com/vafastjs/vafast-helmet/blob/main/LICENSE)
+完整概念说明（CSP / HSTS / Nonce 白话）与注意事项见站点文档：[Helmet 中间件](https://vafast.huyooo.com/middleware/helmet.html)（仓库内 `vafast-doc/docs/middleware/helmet.md`）。

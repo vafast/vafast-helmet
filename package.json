@@ -1,6 +1,6 @@
 {
   "name": "@vafast/helmet",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Plugin for Vafast for security headers",
   "type": "module",
   "license": "MIT",
